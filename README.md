@@ -120,8 +120,7 @@ We expect the report to state the initial time and the final time at which the t
 Regarding the software component of the project, multiple libraries from the internet and from the example codes given by Arduino were utilized in order to efficiently fulfill some of the functions of the program. Below the libraries from which different pieces of code were taken can be found below:
 
 ### ENV III sensor library. 
-'''
-*******************************************************************************
+```
 * Copyright (c) 2021 by M5Stack
 *                  Equipped with M5Core sample source code
 *                          配套  M5Core 示例源代码
@@ -130,7 +129,6 @@ Regarding the software component of the project, multiple libraries from the int
 *
 * Product: ENVIII_SHT30_QMP6988.  环境传感器
 * Date: 2022/7/20
-*******************************************************************************
   Please connect to Port A(22、21),Read temperature, humidity and atmospheric
   pressure and display them on the display screen
   请连接端口A(22、21),读取温度、湿度和大气压强并在显示屏上显示
@@ -153,7 +151,363 @@ void setup() {
     qmp6988.init();
     M5.lcd.println(F("ENVIII Unit(SHT30 and QMP6988) test"));
 }
-'''
+
+void loop() {
+    pressure = qmp6988.calcPressure();
+    if (sht30.get() == 0) {  // Obtain the data of shT30.  获取sht30的数据
+        tmp = sht30.cTemp;   // Store the temperature obtained from shT30.
+                             // 将sht30获取到的温度存储
+        hum = sht30.humidity;  // Store the humidity obtained from the SHT30.
+                               // 将sht30获取到的湿度存储
+    } else {
+        tmp = 0, hum = 0;
+    }
+    M5.lcd.fillRect(0, 20, 100, 60,
+                    BLACK);  // Fill the screen with black (to clear the
+                             // screen).  将屏幕填充黑色(用来清屏)
+    M5.lcd.setCursor(0, 20);
+    M5.Lcd.printf("Temp: %2.1f  \r\nHumi: %2.0f%%  \r\nPressure:%2.0fPa\r\n",
+                  tmp, hum, pressure);
+    delay(2000);
+}
+
+```
+### Email and Wifi Library.
+
+```
+
+/*
+  Rui Santos
+  Complete project details at:
+   - ESP32: https://RandomNerdTutorials.com/esp32-send-email-smtp-server-arduino-ide/
+   - ESP8266: https://RandomNerdTutorials.com/esp8266-nodemcu-send-email-smtp-server-arduino/
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+  Example adapted from: https://github.com/mobizt/ESP-Mail-Client
+*/
+
+// To send Emails using Gmail on port 465 (SSL), you need to create an app password: https://support.google.com/accounts/answer/185833
+
+#include <Arduino.h>
+#if defined(ESP32)
+  #include <WiFi.h>
+#elif defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#endif
+#include <ESP_Mail_Client.h>
+
+#define WIFI_SSID "REPLACE_WITH_YOUR_SSID"
+#define WIFI_PASSWORD "REPLACE_WITH_YOUR_PASSWORD"
+
+#define SMTP_HOST "smtp.gmail.com"
+#define SMTP_PORT 465
+
+/* The sign in credentials */
+#define AUTHOR_EMAIL "YOUR_EMAIL@XXXX.com"
+#define AUTHOR_PASSWORD "YOUR_EMAIL_PASS"
+
+/* Recipient's email*/
+#define RECIPIENT_EMAIL "RECIPIENTE_EMAIL@XXXX.com"
+
+/* The SMTP Session object used for Email sending */
+SMTPSession smtp;
+
+/* Callback function to get the Email sending status */
+void smtpCallback(SMTP_Status status);
+
+void setup(){
+  Serial.begin(115200);
+  Serial.println();
+  Serial.print("Connecting to AP");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(200);
+  }
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  /** Enable the debug via Serial port
+   * none debug or 0
+   * basic debug or 1
+  */
+  smtp.debug(1);
+
+  /* Set the callback function to get the sending results */
+  smtp.callback(smtpCallback);
+
+  /* Declare the session config data */
+  ESP_Mail_Session session;
+
+  /* Set the session config */
+  session.server.host_name = SMTP_HOST;
+  session.server.port = SMTP_PORT;
+  session.login.email = AUTHOR_EMAIL;
+  session.login.password = AUTHOR_PASSWORD;
+  session.login.user_domain = "";
+
+  /* Declare the message class */
+  SMTP_Message message;
+
+  /* Set the message headers */
+  message.sender.name = "ESP";
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = "ESP Test Email";
+  message.addRecipient("Sara", RECIPIENT_EMAIL);
+
+  /*Send HTML message*/
+  String htmlMsg = "<div style=\"color:#2f4468;\"><h1>Hello World!</h1><p>- Sent from ESP board</p></div>";
+  message.html.content = htmlMsg.c_str();
+  message.html.content = htmlMsg.c_str();
+  message.text.charSet = "us-ascii";
+  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+
+  /*
+  //Send raw text message
+  String textMsg = "Hello World! - Sent from ESP board";
+  message.text.content = textMsg.c_str();
+  message.text.charSet = "us-ascii";
+  message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+  
+  message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
+  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;*/
+
+  /* Set the custom message header */
+  //message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+
+  /* Connect to server with the session config */
+  if (!smtp.connect(&session))
+    return;
+
+  /* Start sending Email and close the session */
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
+}
+
+void loop(){
+
+}
+
+/* Callback function to get the Email sending status */
+void smtpCallback(SMTP_Status status){
+  /* Print the current status */
+  Serial.println(status.info());
+
+  /* Print the sending result */
+  if (status.success()){
+    Serial.println("----------------");
+    ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
+    ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+    Serial.println("----------------\n");
+    struct tm dt;
+
+    for (size_t i = 0; i < smtp.sendingResult.size(); i++){
+      /* Get the result item */
+      SMTP_Result result = smtp.sendingResult.getItem(i);
+      time_t ts = (time_t)result.timestamp;
+      localtime_r(&ts, &dt);
+
+      ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
+      ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
+      ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
+      ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
+    }
+    Serial.println("----------------\n");
+  }
+}
+
+```
+
+
+### Email Sneder Library
+
+A zip file was downloaded from the following link https://www.arduinolibraries.info/libraries/e-mail-sender 
+
+### RTC time library.
+
+```
+/*
+*******************************************************************************
+* Copyright (c) 2021 by M5Stack
+*                  Equipped with M5Core2 sample source code
+*                          配套  M5Core2 示例源代码
+* Visit for more information: https://docs.m5stack.com/en/core/core2
+* 获取更多资料请访问: https://docs.m5stack.com/zh_CN/core/core2
+*
+* Describe: RTC--实时时钟示例
+* Date: 2022/1/9
+*******************************************************************************
+*/
+#include <M5Core2.h>
+
+
+RTC_TimeTypeDef RTCtime;
+RTC_DateTypeDef RTCDate;
+
+
+char timeStrbuff[64];
+
+
+void flushTime() {
+  M5.Rtc.GetTime(&RTCtime);  // Gets the time in the real-time clock.
+                             // 获取实时时钟内的时间
+  M5.Rtc.GetDate(&RTCDate);
+  sprintf(timeStrbuff, "%d/%02d/%02d %02d:%02d:%02d", RTCDate.Year,
+          RTCDate.Month, RTCDate.Date, RTCtime.Hours, RTCtime.Minutes,
+          RTCtime.Seconds);
+  // Stores real-time time and date data
+  // to timeStrbuff.
+  // 将实时时间、日期数据存储至timeStrbuff
+  M5.lcd.setCursor(10, 100);
+  // Move the cursor position to (x,y).  移动光标位置到(x,y)处
+  M5.Lcd.println(timeStrbuff);
+  // Output the contents of.  输出timeStrbuff中的内容
+}
+
+
+void setupTime() {
+  RTCtime.Hours = 16;  // Set the time.  设置时间
+  RTCtime.Minutes = 51;
+  RTCtime.Seconds = 20;
+  if (!M5.Rtc.SetTime(&RTCtime)) Serial.println("wrong time set!");
+  // and writes the set time to the real
+  // time clock. 并将设置的时间写入实时时钟
+  RTCDate.Year = 2022;  // Set the date.  设置日期
+  RTCDate.Month = 1;
+  RTCDate.Date = 9;
+  if (!M5.Rtc.SetDate(&RTCDate)) Serial.println("wrong date set!");
+}
+/* After M5Core2 is started or reset
+the program in the setUp () function will be run, and this part will only be run
+once. 在 M5Core2
+启动或者复位后，即会开始执行setup()函数中的程序，该部分只会执行一次。 */
+void setup() {
+  M5.begin();  // Init M5Core2.  初始化 M5Core2
+  delay(1000);
+  setupTime();
+  M5.Lcd.setTextSize(2);  // Set the text size.  设置文本大小
+}
+
+
+/* After the program in setup() runs, it runs the program in loop()
+The loop() function is an infinite loop in which the program runs repeatedly
+在setup()函数中的程序执行完后，会接着执行loop()函数中的程序
+loop()函数是一个死循环，其中的程序会不断的重复运行 */
+void loop() {
+  flushTime();
+  delay(1000);
+}
+
+```
+
+## Equations to predict measurements.
+
+In order to ensure that the program could satisfy its objectives without the need of 3 different sensors, our team explored the possibility of predicting the values of earth moisture and light intensity from the data obtained from the ENV III sensor. The research is shown below.
+
+We need to find a way to obtain values that do not have a sensor by combining other values, for soil moisture use ENVII values and the amount and frequency of watering, and for illuminance use time and dataset for the illuminance index in the UAE.
+There is no direct mathematical formula to approximate soil moisture based on the parameters you mentioned because soil moisture is affected by several variables, including soil type, plant type, temperature, humidity, and rainfall. However, here are some general guidelines that can help approximate soil moisture:
+
+1. Air moisture: High humidity in the air can reduce the rate of evapotranspiration from the soil, resulting in higher soil moisture levels. Conversely, low humidity in the air can increase the evapotranspiration rate, leading to lower soil moisture levels.
+   
+2. Watering frequency: If you water your plant too frequently, the soil may become waterlogged, reducing the amount of oxygen available to the roots, and potentially leading to root rot. On the other hand, if you water your plant too infrequently, the soil may become too dry, which can cause the plant to wilt or die. Water when the top 1-2 inches of soil feel dry to the touch [make an assumption].
+   
+3. Amount of water: The amount of water you give your plant will affect soil moisture levels. Overwatering can lead to waterlogged soil, while underwatering can cause the soil to dry out.
+
+
+Don’t forget about this parameters:
+A value of 0 means soil moisture is at the wilting point (very dry) while a value of 1 means soil moisture is at saturation (very wet). A value of 0.54 means near optimum soil moisture for plant growth while values below 0.2 and above 0.8 indicate drought and excess moisture stress. 
+
+The majority of flowers, trees, and shrubs require moisture levels between 0.21 - 0.40, while all vegetables require soil moisture between 0.41 and 0.80.
+
+While these factors can give you a rough approximation of soil moisture, it's important to note that they are not accurate measurements. For more precise measurements of soil moisture, use a soil moisture sensor or conduct a physical soil moisture test.
+
+Obtained values from Research papers. 
+SOIL MOISTURE -
+
+a*RH*(T-b) = Soil Moisture Content, a and b are constants that depend on soil type and other factors, RH is the relative humidity (between 0 and 1), and T is the temperature in Celsius.
+
+https://hess.copernicus.org/preprints/hess-2023-44/hess-2023-44.pdf
+
+ILLUMINANCE
+
+I = (T/25)^2 * K , I is the illuminance in lux, T is the temperature in Celsius and K is a constant that depends on the latitude and longitude of the location.
+
+https://www.bksv.com/media/doc/18-231.pdf 
+
+
+## Errors and Challenges.
+
+
+Reminders should be sent at more accurate intervals. With the current code, if the parameter was below or above the optimal value for a time below the threshold variable, the reminder is not sent regardless of how close the period of time was to the threshold. Although this will still be mentioned on the daily report, perhaps the user could benefit more by getting a reminder at the moment. 
+
+Setting the time of the M5Stack to real-time. 
+Maintaining the M5 Stack up to the actual hour generally requires trial and error by setting the time manually. Thus, it makes the time displayed on the screen inaccurate.
+
+Connecting multiple sensors to the M5Stack. We had to acquire an export base to connect the two of the sensors we used. 
+
+## Debugging. 
+
+1. M5Stack Core 2 not connecting to the internet.
+It turns out that M5Stack Core 2 cannot connect to the internet like regular devices. There have been multiple attempts and modifications to the code in order to establish internet connection. The device could not connect to the university’s WiFi due to security protocols. The device also did not connect to hotspots of mobile phones, which led us to believe that the problem is in the code. However, by accident, we discovered that we need to allow “Maximize Compatibility” so that Core 2 can connect to the hotspot. This bug was out of the scope of programming, but rather connection and security issues. 
+
+2. M5Stack Core 2 not sending email.
+This was a mixed bug, both due to code (initially) and Google security protocols. However, after adjusting the necessary security settings, the code worked without problems.
+
+3. M5Stack Core 2 refers back to the setup() from loop().
+This was one of the greatest mysteries in our development. The program would suddenly jump from void loop() to void setup(), which we did not know was even possible. We did not get help from a third party either, so we had to figure out the issue on our own. It turns out that Arduino will decide to call setup() if there is a memory management problem in one of the functions. In our case, the code would go outside the range of some arrays, which is mainly due to the fact that the code uses multiple multidimensional arrays, some of them even dynamic, so it was to expect such a bug. We had to take a more cautious look at the boundaries of each array and ensure that we are getting the desired indices. Such debugging was difficult to perform through dry run, but the obtained reports and reminders prove the successfulness of the code. 
+
+4. Minor bugs.
+There have been several minor bugs not worth further elaboration. One of them was formatting the time, i.e. instead of getting 16:4:3, we should get 16:04:03. Or, declaring variables as integers instead of floats and thus losing the necessary accuracy.
+
+
+## Conclusion and Future Work.
+
+GARDEN-01 is a successful coding and hardware project that utilizes the ENVIII, LIGHT, and Earth Moisture sensors to measure plant parameters, process data, and send reports and reminders. Through our dedication, study, and practice, as well as support from the Engineering faculty, we were able to overcome setbacks and complications to improve the health and well-being of our plants.
+
+In the future, we envision a polished version of GARDEN-01 that can be extended to multiple plants and includes soil nutrient analysis to facilitate agriculture in times of climate uncertainty. Although we have completed the project, GARDEN-01 has left an indelible mark on our coding paths and experiences. We hope to revisit and continue its development in the near future. Overall, we are proud of the work we have accomplished and the impact it has had on the plants we have cared for.
+
+## Reflection on Learnings.
+The knowledge acquired and learning objectives achieved  from this project include:
+
+
+To efficiently use the available libraries or snippets of code on the web and other platforms, it is important to understand the code inside them and specifically select the functions that are needed by your program. 
+
+
+Understanding how each hardware component works and how they relate to one another before coding is essential to avoid mistakes of incompatibility. Learning about how the sensors communicate with the M5Stack, and vice versa would have allowed us to save time, since although the code was simple and straightforward, using the incorrect functions due to a misunderstanding of how signals are sent led to continuously unwanted results. 
+
+
+As much as it is important to understand hardware and software individually, it is also important to know how to combine them and test the project as a whole. It is much more difficult to test the output when the input is provided through hardware, rather than custom digital input. 
+
+A lot of the time must be spent on fixing “minor” issues that actually contribute to the majority of the code. For example, how to format the message properly, how to display the menu, make sure that all the arrays are handled correctly, even though the logic seems “simple”, etc. Attention to detail is the key to successfully completing projects like these.  
+
+## Citations.
+
+ Nemlyc, & Zhao, T. (2022, November 10). M5unit-env/unit_enviii_m5core2.ino at master · m5stack/m5unit-env. GitHub. Retrieved May 5, 2023, from https://github.com/m5stack/M5Unit-ENV/blob/master/examples/Unit_ENVIII_M5Core2/Unit_ENVIII_M5Core2.ino
+
+RTC. M5Stack. (n.d.). Retrieved May 5, 2023, from http://docs.m5stack.com/en/api/core2/rtc_api 
+
+Zhao, T. (2022, July 4). M5Stack/examples/unit/light at master · M5STACK/m5stack. GitHub. Retrieved May 5, 2023, from https://github.com/m5stack/M5Stack/tree/master/examples/Unit/LIGHT 
+
+
+Su, D., Zhou, J., Yin, Z., Feng, H., Zheng, X., Han, X., and Hou, Q.: A calculation method of unsaturated soil water content based on thermodynamic equilibrium, Hydrol. Earth Syst. Sci. Discuss. [preprint], https://doi.org/10.5194/hess-2023-44, in review, 2023. 
+
+
+Zhao, T. (2022, July 4). M5Stack/examples/unit/earth at master · M5STACK/m5stack. GitHub. Retrieved May 5, 2023, from https://github.com/m5stack/M5Stack/tree/master/examples/Unit/EARTH 
+
+
+Renzo Mischianti. (2023, February 16). EmailSender Libraries. MIT. Retrieved May 5, 2023, from https://www.arduinolibraries.info/libraries/e-mail-sender
+
+
+Rindorff, H. J. (n.d.). Luminance reflectances explanation and calculation of contrast. Retrieved April 27, 2023, from https://www.bksv.com/doc/18-231.pdf
+
+
+Santos, Rui. ESP32 send emails using SMTP server: HTML, text, attachments (Arduino IDE). Random Nerd Tutorials. (2022, October 26). Retrieved May 5, 2023, from https://randomnerdtutorials.com/esp32-send-email-smtp-server-arduino-ide/  
+
 
 
 
