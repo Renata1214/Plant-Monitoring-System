@@ -7,13 +7,12 @@ To address this problem, we propose a system that provides the users with an upd
 Project Development.
 
 ## Hardware.
-The hardware/devices that were utilized for the project include (figure 1, figure 2, figure 3, figure 4):
+The hardware/devices that were utilized for the project include:
 M5Stack Core 2. Microcontroller in charge of processing the program, displaying the output, and overall carrying out all the functions stated in the code.
 ExtPort board. Extension board used to have access to the Analog to Digital pin on the M5 Stack Core 2 (needed by the Earth Moisture Sensor as well as Light Intensity Unit).
 ENV III sensor. Sensor to record the temperature and humidity of the environment.
-LIGHT Intensity sensor. Sensor to identify the presence or the absence of light.				     Figure 1
+LIGHT Intensity sensor. Sensor to identify the presence or the absence of light.				     
 EARTH moisture sensor. Sensor to measure the moisture content of the soil.
-Figure 2 					Figure 3 				Figure 4
 
 ## Software.
 
@@ -114,4 +113,49 @@ The temperature, humidity, and moisture should be exposed to values above and be
 Reminders about any concerning change in temperature, humidity, and soil moisture; in case the current value goes over or under the ideal range. 
 Report that will be sent to the provided email address and include the changes mentioned in the reminders.
 We expect the report to state the initial time and the final time at which the temperature was at a higher value that the optimal one, as well as the average of the temperature for this period.
+
+## Libraries used
+
+
+Regarding the software component of the project, multiple libraries from the internet and from the example codes given by Arduino were utilized in order to efficiently fulfill some of the functions of the program. Below the libraries from which different pieces of code were taken can be found below:
+
+### ENV III sensor library. 
+'''
+*******************************************************************************
+* Copyright (c) 2021 by M5Stack
+*                  Equipped with M5Core sample source code
+*                          配套  M5Core 示例源代码
+* Visit for more information: https://docs.m5stack.com/en/unit/envIII
+* 获取更多资料请访问: https://docs.m5stack.com/zh_CN/unit/envIII
+*
+* Product: ENVIII_SHT30_QMP6988.  环境传感器
+* Date: 2022/7/20
+*******************************************************************************
+  Please connect to Port A(22、21),Read temperature, humidity and atmospheric
+  pressure and display them on the display screen
+  请连接端口A(22、21),读取温度、湿度和大气压强并在显示屏上显示
+*/
+#include <M5Stack.h>
+#include "M5_ENV.h"
+
+SHT3X sht30;
+QMP6988 qmp6988;
+
+float tmp      = 0.0;
+float hum      = 0.0;
+float pressure = 0.0;
+
+void setup() {
+    M5.begin();             // Init M5Stack.  初始化M5Stack
+    M5.Power.begin();       // Init power  初始化电源模块
+    M5.lcd.setTextSize(2);  // Set the text size to 2.  设置文字大小为2
+    Wire.begin();  // Wire init, adding the I2C bus.  Wire初始化, 加入i2c总线
+    qmp6988.init();
+    M5.lcd.println(F("ENVIII Unit(SHT30 and QMP6988) test"));
+}
+'''
+
+
+
+
 
