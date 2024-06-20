@@ -1,6 +1,7 @@
 # Plant-Monitoring-System
 
 
+
 ## Introduction.
 Taking care of a plant has consistently proven to be a daunting task for the majority of the population. This is commonly explained by the lack of knowledge there is regarding how one can satisfy the needs of a plant, such as soil moisture, temperature, and lighting. In fact, according to different statistics an average "plant parent" accidentally kills seven plants before being able to successfully maintain a plant alive for extended periods of time (Mayers, 2023). With the COVID-19 pandemic causing an 18% surge in demand for houseplants, more people became interested in taking care of their plants' health despite the challenges of returning to in-person work.
 To address this problem, we propose a system that provides the users with an update of the plant’s abiotic factors status, including soil moisture, temperature, humidity, and illumination. The primary objective of this system is to give its users (amateur “plant parents”) the information they need in order to make more informed decisions while taking better care of their plants. Even though the program will not be able to ensure the survival of the plant, as the program would need to monitor many other factors, it will maximize the survival probabilities of the plant regardless of the time invested on it, by reducing the number of careless mistakes done by users.
